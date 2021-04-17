@@ -30,6 +30,10 @@ RUN /opt/conda/bin/conda install pytorch torchvision torchaudio cudatoolkit=11.1
 # XXX: https://cloud.google.com/compute/docs/gpus/install-drivers-gpu#no-secure-boot
 RUN /opt/conda/bin/pip install tensorflow==2.4.1
 
+# TODO(BUGFIX): https://github.com/minho-comcom-ai/tensorflow-pytorch-cuda/issues/2
+# https://github.com/tensorflow/tensorflow/issues/43947#issuecomment-727655093
+RUN ln -s /usr/local/cuda-11.1/targets/x86_64-linux/lib/libcusolver.so.11 /opt/conda/lib/python3.8/site-packages/tensorflow/python/libcusolver.so.10
+
 # Metadata
 LABEL maintainer="minho@comcom.ai"
 ARG IMAGE_NAME
