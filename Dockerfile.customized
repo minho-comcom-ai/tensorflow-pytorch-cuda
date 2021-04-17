@@ -1,0 +1,68 @@
+ARG IMAGE_NAME
+ARG VERSION
+FROM ${IMAGE_NAME}:${VERSION} AS base
+
+VOLUME /root/.ssh
+WORKDIR /workspace
+
+ENV LC_ALL C.UTF-8
+ENV SHELL /bin/bash
+
+
+# Gitlab Clone Hook Requirements
+RUN apt-get update && apt-get install -y build-essential git wget curl netcat-openbsd && rm -rf /var/lib/apt/lists/*
+# NOTE(minho@comcom.ai): is build-essential already included at "base" image? (less size?)
+
+# Metadata
+LABEL maintainer="minho@comcom.ai"
+ARG BUILD_DATE
+ARG VCS_REF
+ARG VCS_BRANCH
+ARG VCS_DESCRIBED
+ARG HOSTNAME
+
+
+###################################### Customized VSCODE
+# XXX: https://github.com/cdr/code-server/releases
+FROM base AS vscode
+WORKDIR /usr
+RUN wget https://github.com/cdr/code-server/releases/download/v3.9.3/code-server-3.9.3-linux-amd64.tar.gz
+RUN tar xf code-server-3.9.3-linux-amd64.tar.gz
+RUN code-server-3.9.3-linux-amd64/bin/code-server --install-extension ms-python.python
+WORKDIR /workspace
+
+COPY entrypoint.vscode.sh /scripts/entrypoint.sh
+RUN chmod +x /scripts/entrypoint.sh
+
+EXPOSE 8000
+CMD /scripts/entrypoint.sh
+
+LABEL org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.vcs-ref=$VCS_REF \
+      org.label-schema.version=$VERSION \
+      ai.comcom.current-branch="$VCS_BRANCH" \
+      ai.comcom.current-branch-described="$VCS_DESCRIBED" \
+      ai.comcom.build-hostname="$HOSTNAME"
+
+
+###################################### Customized JUPYTERLAB
+FROM base AS jupyterlab
+RUN curl -sL https://deb.nodesource.com/setup_lts.x | bash -
+RUN apt-get update && apt-get install -y nodejs && rm -rf /var/lib/apt/lists/*
+
+RUN /opt/conda/bin/pip install jupyterlab jupyterlab-git
+RUN /opt/conda/bin/jupyter labextension enable
+RUN /opt/conda/bin/jupyter labextension install -y @jupyterlab/git
+
+COPY entrypoint.jupyterlab.sh /scripts/entrypoint.sh
+RUN chmod +x /scripts/entrypoint.sh
+
+EXPOSE 8000
+CMD /scripts/entrypoint.sh
+
+LABEL org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.vcs-ref=$VCS_REF \
+      org.label-schema.version=$VERSION \
+      ai.comcom.current-branch="$VCS_BRANCH" \
+      ai.comcom.current-branch-described="$VCS_DESCRIBED" \
+      ai.comcom.build-hostname="$HOSTNAME"

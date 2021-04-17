@@ -1,0 +1,53 @@
+ARG BASE_IMAGE_VERSION
+FROM nvidia/cuda:${BASE_IMAGE_VERSION} AS base
+# CUDA 11.1.1
+# XXX: https://docs.nvidia.com/deeplearning/cudnn/support-matrix/index.html#cudnn-versions-804-805
+# XXX: https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-major-component-versions
+# TODO: CUDA 11.2 is not yet ready for A100 host driver (https://gitlab.com/nvidia/container-images/cuda/-/issues/117)
+
+# TensorRT 7.2.3
+# XXX: https://docs.nvidia.com/deeplearning/tensorrt/install-guide/index.html
+# XXX: https://docs.nvidia.com/deeplearning/tensorrt/release-notes/tensorrt-7.html
+# XXX: https://www.tensorflow.org/install/gpu#ubuntu_1804_cuda_110
+# XXX: libcudnn8 required.
+# XXX: ubuntu 18.04 required: https://docs.nvidia.com/deeplearning/tensorrt/support-matrix/index.html#software-version-platform
+RUN apt-get update && apt install -y libnvinfer7 libnvinfer-dev libnvinfer-plugin7 && rm -rf /var/lib/apt/lists/*
+
+# Miniconda3
+# XXX: https://github.com/ContinuumIO/docker-images/blob/master/miniconda3/debian/Dockerfile
+COPY --from=continuumio/miniconda3 /opt/conda /opt/conda
+RUN ln -s /opt/conda/etc/profile.d/conda.sh /etc/profile.d/conda.sh && \
+    echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc && \
+    echo "conda activate base" >> ~/.bashrc
+
+# PyTorch Stable(1.8.1) + CUDA 11.1
+# XXX: https://pytorch.org/get-started/locally/
+RUN /opt/conda/bin/conda install pytorch torchvision torchaudio cudatoolkit=11.1 -c pytorch -c conda-forge
+# NOTE(minho@comcom.ai): is cudatoolkit=11.1 already included at "base" image? (less size?)
+
+# Tensorflow 2.4.1
+# XXX: https://www.tensorflow.org/install/gpu
+# XXX: https://cloud.google.com/compute/docs/gpus/install-drivers-gpu#no-secure-boot
+RUN /opt/conda/bin/pip install tensorflow==2.4.1
+
+# Metadata
+LABEL maintainer="minho@comcom.ai"
+ARG IMAGE_NAME
+ARG BUILD_DATE
+ARG VCS_REF
+ARG VERSION
+ARG VCS_BRANCH
+ARG VCS_DESCRIBED
+ARG HOSTNAME
+LABEL org.label-schema.schema-version="1.0" \
+      org.label-schema.name="$IMAGE_NAME" \
+      org.label-schema.vendor="minho@comcom.ai" \
+      org.label-schema.description="tensorflow-pytorch-cuda for NVIDIA DGX A100" \
+      org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.url="https://github.com/minho-comcom-ai/tensorflow-pytorch-cuda" \
+      org.label-schema.vcs-ref=$VCS_REF \
+      org.label-schema.vcs-url="https://github.com/minho-comcom-ai/tensorflow-pytorch-cuda" \
+      org.label-schema.version=$VERSION \
+      ai.comcom.current-branch="$VCS_BRANCH" \
+      ai.comcom.current-branch-described="$VCS_DESCRIBED" \
+      ai.comcom.build-hostname="$HOSTNAME"
