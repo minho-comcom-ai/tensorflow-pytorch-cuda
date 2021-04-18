@@ -54,6 +54,10 @@ RUN /opt/conda/bin/pip install jupyterlab jupyterlab-git
 RUN /opt/conda/bin/jupyter labextension enable
 RUN /opt/conda/bin/jupyter labextension install -y @jupyterlab/git
 
+# TODO: @jupyterlab/git frontend extension has version: 0.30.0b3 while the python package has version 0.24.0.
+# https://github.com/jupyterlab/jupyterlab-git/issues/861
+RUN /opt/conda/bin/pip install --upgrade jupyterlab-git
+
 COPY entrypoint.jupyterlab.sh /scripts/entrypoint.sh
 RUN chmod +x /scripts/entrypoint.sh
 
