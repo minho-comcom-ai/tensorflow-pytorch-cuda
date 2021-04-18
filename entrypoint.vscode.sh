@@ -3,8 +3,8 @@ cp /root/temp_key/id_rsa /root/.ssh/id_rsa
 chmod 400 /root/.ssh/id_rsa
 
 # NOTE: GIT_SSH clone with injected ssh key
-export GIT_SSH_HOSTNAME=$(python3 -c "import os;print(os.environ['GIT_SSH_URL'].split(':')[0].split('@')[-1])")
-export REPO_NAME=$(python3 -c "import os;print(os.environ['GIT_SSH_URL'].split(':')[1])")
+export GIT_SSH_HOSTNAME=$(/opt/conda/bin/python3 -c "import os;print(os.environ['GIT_SSH_URL'].split(':')[0].split('@')[-1])")
+export REPO_NAME=$(/opt/conda/bin/python3 -c "import os;print(os.environ['GIT_SSH_URL'].split(':')[1])")
 cat << EOF > /root/.ssh/config
 Host $GIT_SSH_HOSTNAME
   IdentitiesOnly yes
